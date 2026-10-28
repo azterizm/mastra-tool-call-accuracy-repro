@@ -1,7 +1,7 @@
 {
   "name": "mastra-tool-call-accuracy-repro",
   "version": "1.0.0",
-  "description": "Minimal reproduction: Tool Call Accuracy (LLM) scorer in @mastra/evals ignores missingTools once a tool is called, and divides by the judge's evaluation count",
+  "description": "Reproduces two scoring gaps in the Tool Call Accuracy scorer of @mastra/evals",
   "main": "index.js",
   "scripts": {
     "test": "vitest run"

@@ -1,13 +1,14 @@
-# Tool Call Accuracy (LLM): two scoring gaps
+# Two scoring gaps in Mastra's Tool Call Accuracy scorer
 
-Minimal reproduction for `createToolCallAccuracyScorerLLM` in `@mastra/evals`. A scripted judge stands in for the LLM, so the tests run without a provider or API key. Each test asserts the current behaviour and passes.
+This repository reproduces two gaps in `createToolCallAccuracyScorerLLM` from `@mastra/evals`. A scripted judge stands in for the LLM, so the tests need no API key. Each test checks the current behaviour and passes.
 
-## What it shows
+## What the tests show
 
-1. **`missingTools` is ignored once any tool is called.** The user asks for the weather in Paris and a unit conversion. The agent calls only the weather tool. The judge marks that call appropriate and reports the converter as missing. The score is 1.0. The same request with no tool called scores 0.
-2. **The denominator is the number of evaluations the judge returns, not the number of calls.** The agent calls `weather-tool` three times, once as a duplicate. The scenario is the one in the package's own "should handle repeated tool calls" test, which expects 0.67. If the judge returns one evaluation per call, the score is 0.67. If it returns one evaluation for the tool name, the same run scores 1.0.
+A missed tool stops counting once the agent calls any tool. The user asks for the weather in Paris and for 20 C in Fahrenheit. The agent calls only the weather tool. The judge marks that call right and reports the unit converter as missing, yet the score is 1.0. The same request with no tool called scores 0.
 
-Both come from `generateScore` in `packages/evals/src/scorers/llm/tool-call-accuracy/index.ts`:
+The score also depends on how many verdicts the judge returns. The agent calls the weather tool three times, once as a repeat. This is the case in the package's own test "should handle repeated tool calls", which expects 0.67. If the judge returns one verdict per call, the score is 0.67. If it returns one verdict for the tool name, the same run scores 1.0.
+
+Both gaps come from `generateScore` in `packages/evals/src/scorers/llm/tool-call-accuracy/index.ts`.
 
 ```ts
 if (evaluations.length === 0) {
@@ -17,17 +18,13 @@ if (evaluations.length === 0) {
 return roundToTwoDecimals(appropriateToolCalls / evaluations.length);
 ```
 
-In the package's `index.test.ts`, the 12 tests under Scoring Logic, Edge Cases and Real-world Scenarios replace `scorer.run` with `vi.fn().mockResolvedValue(...)`, so the scoring code above never runs in them.
+The package's own tests don't reach this code. In its `index.test.ts`, 12 of the 16 tests replace `scorer.run` with a mock, so the scoring step never runs in them.
 
-## Run
+## Run the tests
 
 ```bash
 npm install
 npm test
 ```
 
-## Environment
-
-- `@mastra/core` 1.80.0, `@mastra/evals` 1.10.9
-- `ai` 5.0.282 (for `MockLanguageModelV2`), `vitest` 4.1.12, `zod` 4.6.7
-- Node.js 26.7.0, macOS 26.6.2 (Apple Silicon)
+The tests ran on Node.js 26.7.0 and macOS 26.6.2, with @mastra/core 1.80.0, @mastra/evals 1.10.9, ai 5.0.282, vitest 4.1.12 and zod 4.6.7.
